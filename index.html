@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Notes App</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 15px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        h1, h2 {
+            color: #333;
+            text-align: center;
+        }
+        .note-form label,
+        .note-form input,
+        .note-form textarea,
+        .note-form button {
+            display: block;
+            width: 100%;
+            margin-bottom: 10px;
+            box-sizing: border-box; /* Include padding and border in element's total width and height */
+        }
+        .note-form input[type="text"],
+        .note-form textarea,
+        .note-form input[type="file"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+         .note-form textarea {
+            min-height: 80px;
+            resize: vertical;
+         }
+        .note-form button {
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .note-form button:hover {
+            background-color: #0056b3;
+        }
+        #imagePreview {
+            max-width: 100%;
+            max-height: 200px;
+            margin-top: 10px;
+            display: none; /* Hide initially */
+            border: 1px dashed #ccc;
+            padding: 5px;
+        }
+        #notesList {
+            margin-top: 30px;
+        }
+        .note-item {
+            background-color: #fff8e1;
+            border: 1px solid #ffe082;
+            border-left: 5px solid #ffc107;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            position: relative; /* For positioning the delete button */
+            word-wrap: break-word; /* Prevent long text overflow */
+        }
+        .note-item h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        .note-item p {
+             margin-bottom: 10px;
+             white-space: pre-wrap; /* Preserve line breaks in text */
+        }
+        .note-item img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin-top: 10px;
+            border-radius: 4px;
+        }
+        .note-item .timestamp {
+            font-size: 0.8em;
+            color: #777;
+            margin-top: 10px;
+            display: block;
+        }
+         .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            font-size: 14px;
+            line-height: 25px; /* Center the 'X' vertically */
+            text-align: center;
+            cursor: pointer;
+            font-weight: bold;
+         }
+         .delete-btn:hover {
+            background-color: #c82333;
+         }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Student Quick Notes</h1>
+
+        <div class="note-form">
+            <h2>Add New Note</h2>
+            <label for="noteTitle">Title (Optional):</label>
+            <input type="text" id="noteTitle" placeholder="Note ka title likhein...">
+
+            <label for="noteText">Text Content:</label>
+            <textarea id="noteText" placeholder="Apna text yahan likhein..."></textarea>
+
+            <label for="noteImage">Attach Image (Optional):</label>
+            <input type="file" id="noteImage" accept="image/*">
+            <img id="imagePreview" src="#" alt="Image Preview" />
+
+            <button id="addNoteBtn">Note Save Karein</button>
+        </div>
+
+        <hr>
+
+        <h2>Saved Notes</h2>
+        <div id="notesList">
+            <!-- Saved notes will be displayed here -->
+        </div>
+    </div>
+
+    <script>
+        // Get DOM elements
+        const noteTitleInput = document.getElementById('noteTitle');
+        const noteTextInput = document.getElementById('noteText');
+        const noteImageInput = document.getElementById('noteImage');
+        const imagePreview = document.getElementById('imagePreview');
+        const addNoteBtn = document.getElementById('addNoteBtn');
+        const notesListDiv = document.getElementById('notesList');
+
+        // --- Image Preview Logic ---
+        noteImageInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block'; // Show preview
+                }
+                reader.readAsDataURL(file); // Read file as Data URL
+            } else {
+                imagePreview.src = '#';
+                imagePreview.style.display = 'none'; // Hide preview
+            }
+        });
+
+        // --- Load Notes from Local Storage ---
+        function loadNotes() {
+            notesListDiv.innerHTML = ''; // Clear current list
+            const notes = JSON.parse(localStorage.getItem('studentNotes') || '[]');
+
+            if (notes.length === 0) {
+                notesListDiv.innerHTML = '<p>Abhi koi notes save nahi kiye gaye hain.</p>';
+                return;
+            }
+
+            notes.forEach((note, index) => {
+                const noteElement = document.createElement('div');
+                noteElement.classList.add('note-item');
+
+                // Add Title
+                if (note.title) {
+                    const titleElement = document.createElement('h3');
+                    titleElement.textContent = note.title;
+                    noteElement.appendChild(titleElement);
+                }
+
+                // Add Text Content
+                if (note.text) {
+                    const textElement = document.createElement('p');
+                    textElement.textContent = note.text;
+                    noteElement.appendChild(textElement);
+                }
+
+                // Add Image
+                if (note.image) {
+                    const imgElement = document.createElement('img');
+                    imgElement.src = note.image; // The stored base64 data URL
+                    imgElement.alt = note.title || 'Note Image';
+                    noteElement.appendChild(imgElement);
+                }
+
+                 // Add Timestamp
+                const timestampElement = document.createElement('span');
+                timestampElement.classList.add('timestamp');
+                timestampElement.textContent = `Saved on: ${new Date(note.timestamp).toLocaleString()}`;
+                noteElement.appendChild(timestampElement);
+
+                // Add Delete Button
+                const deleteBtn = document.createElement('button');
+                deleteBtn.classList.add('delete-btn');
+                deleteBtn.textContent = 'X';
+                deleteBtn.title = 'Delete Note';
+                deleteBtn.onclick = function() {
+                    deleteNote(index);
+                };
+                noteElement.appendChild(deleteBtn);
+
+
+                notesListDiv.appendChild(noteElement);
+            });
+        }
+
+        // --- Save Note Logic ---
+        addNoteBtn.addEventListener('click', function() {
+            const title = noteTitleInput.value.trim();
+            const text = noteTextInput.value.trim();
+            const file = noteImageInput.files[0];
+
+            if (!text && !file) {
+                alert('Please add some text or select an image to save the note.');
+                return;
+            }
+
+            const timestamp = Date.now(); // Unique timestamp for the note
+
+            if (file) {
+                // If image is selected, read it as Base64
+                const reader = new FileReader();
+                reader.onloadend = function() {
+                    // This runs after the file is read
+                    const imageDataUrl = reader.result;
+                    saveNoteToLocalStorage({ title, text, image: imageDataUrl, timestamp });
+                }
+                reader.readAsDataURL(file); // Start reading the file
+            } else {
+                // If no image, save directly
+                saveNoteToLocalStorage({ title, text, image: null, timestamp });
+            }
+        });
+
+        // --- Helper function to save to Local Storage ---
+        function saveNoteToLocalStorage(newNote) {
+            const notes = JSON.parse(localStorage.getItem('studentNotes') || '[]');
+            notes.unshift(newNote); // Add new note to the beginning of the array
+            localStorage.setItem('studentNotes', JSON.stringify(notes));
+
+            // Clear the form and reload notes
+            clearForm();
+            loadNotes();
+        }
+
+        // --- Delete Note Logic ---
+        function deleteNote(indexToDelete) {
+            if (!confirm('Kya aap is note ko delete karna chahte hain?')) {
+                return; // Stop if user cancels
+            }
+            const notes = JSON.parse(localStorage.getItem('studentNotes') || '[]');
+            notes.splice(indexToDelete, 1); // Remove the note at the specified index
+            localStorage.setItem('studentNotes', JSON.stringify(notes));
+            loadNotes(); // Reload the notes list
+        }
+
+
+        // --- Clear Form Helper ---
+        function clearForm() {
+            noteTitleInput.value = '';
+            noteTextInput.value = '';
+            noteImageInput.value = ''; // Reset file input
+            imagePreview.src = '#';
+            imagePreview.style.display = 'none';
+        }
+
+
+        // --- Initial Load ---
+        // Load existing notes when the page loads
+        document.addEventListener('DOMContentLoaded', loadNotes);
+
+    </script>
+
+</body>
+</html>
